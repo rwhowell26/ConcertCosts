@@ -88,7 +88,8 @@ export type ValueScale = {
 /**
  * Money vs enjoyment scale.
  * Higher concert rating + lower spend → better value.
- * Uses Fun Points per $100, mapped onto a 0–100 meter and plain-English tiers.
+ * Meter uses a soft (diminishing) curve so cheap/free outliers don't
+ * stretch the bar to the end and crush typical concerts.
  */
 export function moneyVsEnjoymentScale(
   concertRating: number,
@@ -109,49 +110,53 @@ export function moneyVsEnjoymentScale(
     };
   }
 
-  // Cap meter at ~15 fun pts / $100 ≈ full bar (very strong value).
-  const meter = Math.max(0, Math.min(100, (funPer100 / 15) * 100));
+  // Soft curve: mid-range concerts land near the middle; outliers asymptote to 100.
+  const meter = Math.max(
+    0,
+    Math.min(100, (1 - Math.exp(-funPer100 / 4.5)) * 100)
+  );
+  const ratingLabel = formatNumber(rating, 2);
 
-  if (funPer100 < 1.5) {
+  if (funPer100 < 2) {
     return {
       meter,
       funPer100,
       tier: "poor",
       label: "Steep for the fun",
-      detail: `You spent ${formatMoney(total)} for a ${rating}/10 night — pricey relative to the enjoyment.`,
+      detail: `You spent ${formatMoney(total)} for a ${ratingLabel}/10 night — pricey relative to the enjoyment.`,
       colorClass: "badge-error",
       barClass: "bg-error",
     };
   }
-  if (funPer100 < 3.5) {
+  if (funPer100 < 4) {
     return {
       meter,
       funPer100,
       tier: "fair",
       label: "Fair value",
-      detail: `Okay trade-off: ${rating}/10 enjoyment for ${formatMoney(total)}.`,
+      detail: `Okay trade-off: ${ratingLabel}/10 enjoyment for ${formatMoney(total)}.`,
       colorClass: "badge-warning",
       barClass: "bg-warning",
     };
   }
-  if (funPer100 < 6) {
+  if (funPer100 < 7) {
     return {
       meter,
       funPer100,
       tier: "good",
       label: "Good value",
-      detail: `Solid night — ${rating}/10 fun for ${formatMoney(total)}.`,
+      detail: `Solid night — ${ratingLabel}/10 fun for ${formatMoney(total)}.`,
       colorClass: "badge-info",
       barClass: "bg-info",
     };
   }
-  if (funPer100 < 10) {
+  if (funPer100 < 12) {
     return {
       meter,
       funPer100,
       tier: "great",
       label: "Great value",
-      detail: `Strong bang for your buck: ${rating}/10 for ${formatMoney(total)}.`,
+      detail: `Strong bang for your buck: ${ratingLabel}/10 for ${formatMoney(total)}.`,
       colorClass: "badge-success",
       barClass: "bg-success",
     };
@@ -161,10 +166,17 @@ export function moneyVsEnjoymentScale(
     funPer100,
     tier: "amazing",
     label: "Amazing value",
-    detail: `Huge win — lots of enjoyment (${rating}/10) for ${formatMoney(total)}.`,
+    detail: `Huge win — lots of enjoyment (${ratingLabel}/10) for ${formatMoney(total)}.`,
     colorClass: "badge-primary",
     barClass: "bg-primary",
   };
+}
+
+/** Bar width 0–100 that resists being stretched by a single huge outlier. */
+export function evenBarPercent(value: number, maxValue: number): number {
+  if (value <= 0 || maxValue <= 0) return 0;
+  const scaled = Math.log1p(value) / Math.log1p(maxValue);
+  return Math.max(6, Math.min(100, Math.round(scaled * 100)));
 }
 
 export function formatMoney(amount: number): string {
@@ -179,6 +191,14 @@ export function formatNumber(value: number, digits = 2): string {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: digits,
     minimumFractionDigits: 0,
+  }).format(value);
+}
+
+/** Rating averages always shown with exactly 2 decimal places. */
+export function formatRatingAverage(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value);
 }
 

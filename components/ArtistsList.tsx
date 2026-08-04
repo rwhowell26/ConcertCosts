@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   formatMetric,
   formatMoney,
-  formatNumber,
+  formatRatingAverage,
 } from "@/lib/metrics";
 import {
   buildArtistLeaderboard,
@@ -122,7 +122,7 @@ export function ArtistsList({ artists }: Props) {
                 />
                 <Stat
                   label="Avg concert rating"
-                  value={`${formatNumber(selected.avgRating, 1)} / 10`}
+                  value={`${formatRatingAverage(selected.avgRating)} / 10`}
                 />
                 <Stat
                   label="Avg total cost"

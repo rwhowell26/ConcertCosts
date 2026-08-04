@@ -11,8 +11,10 @@ import {
 import {
   Concert,
   COST_CATEGORIES,
+  evenBarPercent,
   formatMoney,
   formatNumber,
+  formatRatingAverage,
   funPointsPer100,
   totalCost,
   toNumber,
@@ -88,7 +90,7 @@ function topFiveWithTies(ranked: RankItem[]): RankItem[] {
 
 function formatMetricValue(metric: MetricKey, value: number): string {
   if (metric === "total") return formatMoney(value);
-  if (metric === "fun") return `${formatNumber(value, 0)} / 10`;
+  if (metric === "fun") return `${formatRatingAverage(value)} / 10`;
   return formatNumber(value);
 }
 
@@ -142,10 +144,7 @@ function RankingPanel({
         ) : (
           <ol className="space-y-2">
             {visible.map((item) => {
-              const width =
-                maxValue > 0
-                  ? Math.max(6, Math.round((item.value / maxValue) * 100))
-                  : 0;
+              const width = evenBarPercent(item.value, maxValue);
               return (
                 <li
                   key={`${metric}-${item.id}`}
@@ -269,10 +268,7 @@ function ArtistRankingPanel({ concerts }: { concerts: Concert[] }) {
         ) : (
           <ol className="space-y-2">
             {visible.map((item) => {
-              const width =
-                maxShows > 0
-                  ? Math.max(6, Math.round((item.shows / maxShows) * 100))
-                  : 0;
+              const width = evenBarPercent(item.shows, maxShows);
               return (
                 <li
                   key={`artist-${item.artist}`}

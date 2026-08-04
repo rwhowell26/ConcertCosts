@@ -5,6 +5,7 @@ import {
   formatMetric,
   formatMoney,
   formatNumber,
+  formatRatingAverage,
 } from "@/lib/metrics";
 import {
   TYPICAL_FAN_AVERAGES,
@@ -47,7 +48,7 @@ function SideCard({
       <div className="stat bg-base-100 rounded-box p-3 border border-base-300">
         <div className="stat-title text-xs">Avg concert rating</div>
         <div className="stat-value text-xl">
-          {formatNumber(avgRating, 1)} / 10
+          {formatRatingAverage(avgRating)} / 10
         </div>
       </div>
 
@@ -181,7 +182,7 @@ export function ComparePeersButton({ yours }: Props) {
               yours={yours.avgRating}
               theirs={peers.avgRating}
               higherIsBetter
-              format={(v) => `${formatNumber(v, 1)}/10`}
+              format={(v) => `${formatRatingAverage(v)}/10`}
             />
             <VerdictLine
               label="Money spent"

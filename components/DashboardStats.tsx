@@ -3,6 +3,7 @@ import {
   costPerHour,
   formatMetric,
   formatMoney,
+  formatRatingAverage,
   moneyVsEnjoymentScale,
   totalCost,
   toNumber,
@@ -79,7 +80,7 @@ export function DashboardStats({ concerts }: Props) {
         <StatCard label="Avg cost / concert" value={formatMoney(avgCost)} />
         <StatCard
           label="Avg concert rating"
-          value={formatMetric(avgFun) + " / 10"}
+          value={`${formatRatingAverage(avgFun)} / 10`}
         />
         <StatCard
           label="Avg cost per hour"
