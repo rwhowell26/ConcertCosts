@@ -1,12 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeSelector } from "@/components/ThemeSelector";
 
 export function LoginForm() {
-  const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,64 +12,72 @@ export function LoginForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  function goToApp() {
+    // Full page load so auth cookies are sent to the server on Vercel.
+    window.location.assign("/dashboard");
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setMessage(null);
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    if (mode === "signup") {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      if (mode === "signup") {
+        const { data: signUpData, error: signUpError } =
+          await supabase.auth.signUp({
+            email,
+            password,
+          });
+
+        if (signUpError) {
+          setError(signUpError.message);
+          return;
+        }
+
+        if (signUpData.session) {
+          goToApp();
+          return;
+        }
+
+        const { error: signInAfterSignUpError } =
+          await supabase.auth.signInWithPassword({ email, password });
+
+        if (!signInAfterSignUpError) {
+          goToApp();
+          return;
+        }
+
+        setMessage(
+          "Account created, but email confirmation may still be required in Supabase. Turn off Confirm email, then log in."
+        );
+        setMode("login");
+        return;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (signUpError) {
-        setLoading(false);
-        setError(signUpError.message);
+
+      if (signInError) {
+        setError(signInError.message);
         return;
       }
 
-      // If Confirm email is off, Supabase returns a session and we can go straight in.
-      if (signUpData.session) {
-        setLoading(false);
-        router.push("/dashboard");
-        router.refresh();
-        return;
-      }
-
-      // Otherwise try logging in right away (works once Confirm email is disabled).
-      const { error: signInAfterSignUpError } =
-        await supabase.auth.signInWithPassword({ email, password });
-      setLoading(false);
-
-      if (!signInAfterSignUpError) {
-        router.push("/dashboard");
-        router.refresh();
-        return;
-      }
-
-      setMessage(
-        "Account created, but login needs email confirmation turned off in Supabase. See the steps in the chat, then try logging in."
+      goToApp();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong while logging in. Please try again."
       );
-      setMode("login");
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
-
-    if (signInError) {
-      setError(signInError.message);
-      return;
-    }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   const fieldRow =
